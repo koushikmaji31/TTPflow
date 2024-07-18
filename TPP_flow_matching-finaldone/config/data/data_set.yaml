@@ -1,0 +1,3 @@
+root: data/
+batch_size: 256
+name: reddit_askscience_comments

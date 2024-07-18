@@ -1,0 +1,42 @@
+#./train.py --multirun hydra/launcher=slurm 
+
+defaults:
+  - data: data_set
+  - task: forecast # density, forecast
+  - hydra: default
+  
+  # Allow the model to overwrite the settings below
+  - _self_
+  - model: add_thin
+
+optimization:
+  optimizer_type: Adam
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: gpu
+  max_epochs: 350
+  log_every_n_steps: 1
+  resume_from_checkpoint: ~
+  check_val_every_n_epoch: 1
+  gradient_clip_val: 2.
+  gradient_clip_algorithm: value
+  num_sanity_val_steps: 0
+
+
+seed: 135398
+eval_testset: True
+
+id: ~
+entity: ~
+project: add_thin_density
+group: ~
+mode: ~
+name: ~
+run_dir: outputs/wandb
+
+early_stopping: 1000000
+
+hydra:
+  job:
+      name: ${project}
