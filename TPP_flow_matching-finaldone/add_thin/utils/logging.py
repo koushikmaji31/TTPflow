@@ -36,6 +36,24 @@ def count_params(model: nn.Module):
     }
 
 
+# @rank_zero_only
+# def log_hyperparameters(
+#     logger,
+#     config: DictConfig,
+#     model: pl.LightningModule,
+# ):
+#     hparams = OmegaConf.to_container(config, resolve=True)
+#     hparams.setdefault("model", {}).update(count_params(model))
+#     logger.log_hyperparams(hparams)
+#     # Disable logging any more hyperparameters for all loggers (this is just a trick to
+#     # prevent trainer from logging hparams of model, since we already did that above)
+#     logger.log_hyperparams = lambda *args, **kwargs: None
+
+
+# Disable logging any more hyperparameters for all loggers
+def disable_logging(*args, **kwargs):
+    return None
+
 @rank_zero_only
 def log_hyperparameters(
     logger,
@@ -47,6 +65,4 @@ def log_hyperparameters(
 
     logger.log_hyperparams(hparams)
 
-    # Disable logging any more hyperparameters for all loggers (this is just a trick to
-    # prevent trainer from logging hparams of model, since we already did that above)
-    logger.log_hyperparams = lambda *args, **kwargs: None
+    logger.log_hyperparams = disable_logging

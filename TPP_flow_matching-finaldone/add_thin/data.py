@@ -639,6 +639,7 @@ class DataModule(pl.LightningDataModule):
         )
 
 
+
 def load_sequences(root, name: str) -> List[Sequence]:
     """Load dataset.
 
@@ -656,6 +657,7 @@ def load_sequences(root, name: str) -> List[Sequence]:
 
     """
     path = os.path.join(root, f"{name}.pkl")
+
     loader = torch.load(path, map_location=torch.device("cpu"))
 
     sequences = loader["sequences"]
@@ -679,5 +681,4 @@ if __name__ == "__main__":
     )
 
     dm.prepare_data()
-
     train_loader = dm.train_dataloader()

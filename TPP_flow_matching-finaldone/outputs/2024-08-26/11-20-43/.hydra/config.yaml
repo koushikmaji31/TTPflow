@@ -1,0 +1,42 @@
+data:
+  root: data/
+  batch_size: 10
+  name: reddit_askscience_comments
+task:
+  name: forecast
+  learning_rate: 0.01
+  lr_decay: null
+  weight_decay: 1.0e-05
+  lr_schedule: null
+  metric: val/forecast_wasserstein_distance
+optimization:
+  optimizer_type: Adam
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: gpu
+  max_epochs: 350
+  log_every_n_steps: 1
+  resume_from_checkpoint: null
+  check_val_every_n_epoch: 1
+  gradient_clip_val: 2.0
+  gradient_clip_algorithm: value
+  num_sanity_val_steps: 0
+seed: 135398
+eval_testset: true
+id: null
+entity: null
+project: add_thin_density
+group: null
+mode: null
+name: null
+run_dir: outputs/wandb
+early_stopping: 1000000
+model:
+  name: add_thin
+  steps: 1
+  classifier_layer: 1
+  encoder_layer: 3
+  mix_components: 1
+  hidden_dims: 16
+  simulation_steps: 3
+  kernel_size: 5
