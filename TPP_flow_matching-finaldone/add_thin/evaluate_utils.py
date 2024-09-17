@@ -21,7 +21,7 @@ def get_task(path, density=True, data_root="/path/to/data"):
         task (Task): The task object.
         datamodule (DataModule): The datamodule object.
     """
-    model_path = path + "/checkpoints/best.ckpt"
+    model_path = os.path.join(path, "checkpoints", "best.ckpt")
     with open(path + "/config_hydra.yaml", "r") as stream:
         config = OmegaConf.load(stream)
 

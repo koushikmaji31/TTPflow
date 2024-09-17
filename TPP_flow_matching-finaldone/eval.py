@@ -4,9 +4,9 @@ from add_thin.metrics import MMD, lengths_distribution_wasserstein_distance
 from add_thin.evaluate_utils import get_task, get_run_data
 
 # Set run id and paths
-RUN_ID = "ifd5gi6i"
+RUN_ID = "7nn6ltny"
 
-WANDB_DIR = "outputs/wandb/wandb"
+WANDB_DIR = "/raid/ai23mtech11004/TTPflow/TPP_flow_matching-finaldone/outputs/wandb/wandb"
 PROJECT_ROOT = "./"  # should include data folder
 
 def sample_model(task, tmax, n=1000):

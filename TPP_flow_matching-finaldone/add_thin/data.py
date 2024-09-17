@@ -330,7 +330,14 @@ class Batch:
         time, mask, kept = Batch.sort_time(time, mask, kept, tmax=tmax)
 
         # Reduce padding along sequence length
-        max_length = max(mask.sum(-1)).int()
+        mask_sum = mask.sum(-1)
+        if mask_sum.size(0) > 0:
+            max_length = max(mask_sum).int()
+        else:
+            # Handle the case where mask_sum is empty
+            print("Warning: mask_sum is empty.")
+            max_length = torch.tensor(0)
+        # max_length = max(mask.sum(-1)).int()
         mask = mask[:, : max_length + 1]
         time = time[:, : max_length + 1]
         if kept is not None:

@@ -195,6 +195,7 @@ class AddThin(DiffusionModell):
         """
         # Compute history embedding
         B, L = batch.time.shape
+        print("*****",B,"****",L)
 
         # Encode event times
         time_emb = self.time_encoder(
@@ -275,6 +276,7 @@ class AddThin(DiffusionModell):
         # Create a mask for the indices to keep
         max_sequence_length = x_0.mask.size(1)
         indices_to_keep = torch.arange(max_sequence_length, device=x_0.mask.device)[None, :] >= (x_0_unpadded - kept_lengths)[:, None]
+
         # Expand the mask to match the shape of x_0.mask
         expanded_mask = indices_to_keep.expand_as(x_0.mask)
 
@@ -292,6 +294,7 @@ class AddThin(DiffusionModell):
         indices_to_keep = torch.arange(max_sequence_length, device=x_0.mask.device)[None, :] < kept_lengths[:, None]
 
         # Expand the mask to match the shape of x_0.mask
+       
         expanded_mask = indices_to_keep.expand_as(x_0.mask)
 
         # Apply the mask to x_0.mask

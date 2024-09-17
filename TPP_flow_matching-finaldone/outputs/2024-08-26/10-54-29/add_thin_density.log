@@ -1,7 +1,0 @@
-[10:54:36][__main__][INFO] /tmp/wandb/run-20240826_105431-nvcuvieo/files
-[10:54:36][__main__][INFO] Loading data
-[10:54:38][__main__][INFO] reddit_askscience_comments
-[10:54:38][__main__][INFO] Instantiating model
-[10:54:38][__main__][INFO] Loading checkpoint
-[10:54:38][__main__][INFO] Instantiating trainer
-[10:54:38][__main__][INFO] Starting training!

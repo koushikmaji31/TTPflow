@@ -1,7 +1,0 @@
-[10:23:32][__main__][INFO] /tmp/wandb/run-20240826_102327-rg42y38b/files
-[10:23:32][__main__][INFO] Loading data
-[10:23:34][__main__][INFO] reddit_askscience_comments
-[10:23:34][__main__][INFO] Instantiating model
-[10:23:34][__main__][INFO] Loading checkpoint
-[10:23:34][__main__][INFO] Instantiating trainer
-[10:23:34][__main__][INFO] Starting training!
