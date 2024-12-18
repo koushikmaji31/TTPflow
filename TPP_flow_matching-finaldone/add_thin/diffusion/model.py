@@ -195,7 +195,6 @@ class AddThin(DiffusionModell):
         """
         # Compute history embedding
         B, L = batch.time.shape
-        print("*****",B,"****",L)
 
         # Encode event times
         time_emb = self.time_encoder(

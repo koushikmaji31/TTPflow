@@ -128,6 +128,8 @@ class Batch:
 
         self._validate()
 
+
+       
     @property
     def batch_size(self) -> int:
         return self.time.shape[0]
@@ -197,6 +199,7 @@ class Batch:
             < sequence_length[:, None]
         )
 
+    
         batch = Batch(
             mask=mask,
             time=time,
@@ -421,14 +424,16 @@ class Batch:
         history : Batch
             Batch of events before t_min.
         forecast : Batch
-            Batch of events between t_min and t_max.
-        t_max : TensorType
-            Maximum time of events to keep.
+            Batch of events between t_min and t_max.                       
+        t_max : TensorType                                         
+            Maximum time of events to keep.                                
         t_min : TensorType
             Minimum time of events to keep.
         """
         assert t_min.dim() == 1, "time has too many dimensions"
         assert t_max.dim() == 1, "time has too many dimensions"
+        print(">>>>>>>>>>>>>>>>>>>>>")
+        print("the no of seq in the batch is" ,t_min.shape[0])
 
         history_mask = self.time < t_min[:, None]
         forecast_mask = (self.time < t_max[:, None]) & ~history_mask
@@ -439,6 +444,18 @@ class Batch:
 
         # more than 5 events in history and more than one to be predicted
         batch_mask = (forecast_mask.sum(-1) > 1) & (history_mask.sum(-1) > 5)
+        print("the batchmask shape is also " ,batch_mask.shape[0])
+
+        print("the no of valid seq: ",sum(batch_mask).cpu().item())
+        print("<<<<<<<<<<<<<<<<<<<<<<<<")
+
+
+        # stop training the batch which have size 0;
+            # 6,7,9,13,16,19,24,29     tmin = 7    6<tmin<18   forcastwindownsize = 4
+            # t,f,f,f,f,f,f,f,f,f
+            # f,t,t,f,f,f,f,f,f,f
+
+
 
         # shorten padding after removal
         return (
@@ -623,18 +640,23 @@ class DataModule(pl.LightningDataModule):
             self.train_data,
             batch_size=self.batch_size,
             collate_fn=Batch.from_sequence_list,
-            num_workers=0,
-            shuffle=True,
+            num_workers=0,  # Adjust based on your system
+            # pin_memory=True,  # Transfer data faster to GPU
+            # persistent_workers=True,
+            # shuffle=True,    #modified this line to stop shuffel accroass the batch
         )
-
+            
     def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.val_data,
             batch_size=len(self.val_data),  # evaluate all at once
             collate_fn=Batch.from_sequence_list,
             num_workers=0,
+            # pin_memory=True,
+            # persistent_workers=True,
             drop_last=False,
         )
+
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(

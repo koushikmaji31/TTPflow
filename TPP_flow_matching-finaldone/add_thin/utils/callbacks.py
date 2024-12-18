@@ -81,7 +81,6 @@ class WandbSummaries(pl.Callback):
             return False
 
     def _update_summaries(self):
-        wandb.init() 
         # wandb is supposed not to update the summaries anymore once we set them manually,
         # but they are still getting updated, so we make sure to set them after logging
         if self.best_metrics is not None:
