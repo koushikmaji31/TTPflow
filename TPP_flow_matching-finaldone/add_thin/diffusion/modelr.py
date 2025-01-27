@@ -268,82 +268,47 @@ class AddThin(DiffusionModell):
             event_emb,
         )
 
-    def thin_from_right_masks(self, x_0, alpha):
-        x_0_unpadded = x_0.unpadded_length
-        kept_lengths = (alpha * x_0_unpadded).round().long()
-
-        # Create a mask for the indices to keep
-        max_sequence_length = x_0.mask.size(1)
-        indices_to_keep = torch.arange(max_sequence_length, device=x_0.mask.device)[None, :] >= (x_0_unpadded - kept_lengths)[:, None]
-
-        # Expand the mask to match the shape of x_0.mask
-        expanded_mask = indices_to_keep.expand_as(x_0.mask)
-
-        # Apply the mask to x_0.mask
-        new_masks = x_0.mask * expanded_mask.float()
-
-        return new_masks.float()
-
-    def thin_from_left_masks(self, x_0, alpha):
-        x_0_unpadded = x_0.unpadded_length
-        kept_lengths = (alpha * x_0_unpadded).round().long()
-
-        # Create a mask for the indices to keep
-        max_sequence_length = x_0.mask.size(1)
-        indices_to_keep = torch.arange(max_sequence_length, device=x_0.mask.device)[None, :] < kept_lengths[:, None]
-
-        # Expand the mask to match the shape of x_0.mask
-       
-        expanded_mask = indices_to_keep.expand_as(x_0.mask)
-
-        # Apply the mask to x_0.mask
-        new_masks = x_0.mask * expanded_mask.float()
-
-        return new_masks.float()
-
-    def noise(
-        self, x_0, n
-    ):
+    def noise(self, x_1, n):
         """
-        Sample x_n from x_0 by applying the noising process.
-
+        Generate x_0 (HPP) and x_n (modified sequence with x_1 events up to threshold time).
+        
         Parameters
         ----------
-        x_0 : Batch
-            Batch of data
-        n : TensorType[torch.long, "batch"]
-            Number of noise steps
-
+        x_1 : list of 1D tensors
+            List of sequences representing the original data.
+        n : 1D tensor
+            Tensor containing thresholds scaled between 0 and 1 for each sequence.
+        
         Returns
         -------
-        Tuple[Batch, Batch]
-            x_n and thinned x_0
+        x_0 : list of 1D tensors
+            List of homogeneous Poisson process sequences.
+        x_n : list of 1D tensors
+            Modified sequences with events from x_1 before t_threshold and x_0 after.
         """
-        # Thin
+        # Step 1: Generate homogeneous Poisson processes (HPP) for x_0
+        tmax = x_1.tmax  # Maximum time
+        x_0 = generate_hpp(tmax=tmax, n_sequences=len(x_1))  # List of sequences
 
+        # Step 2: Generate x_n by replacing events in x_0 with those from x_1 before threshold
+        x_n = []
+        for i in range(len(x_1)):
+            # Calculate the threshold time for this sequence
+            threshold_time = n[i].item() * tmax
 
-        n_prob = n
-        sp = n_prob * self.simulation_steps
-        new_masks = self.thin_from_right_masks(x_0, n_prob).float()
-        x_0_kept, x_0_thinned = x_0.thin(alpha= new_masks)
-        new_left= self.thin_from_right_masks(x_0_thinned, 1/(self.simulation_steps - sp))
-        x_0_thinned, _ = x_0_thinned.thin(alpha=new_left)
+            # Filter events based on the threshold
+            x_1_events = x_1[i][x_1[i] <= threshold_time]  # Events from x_1 before threshold
+            x_0_events = x_0[i][x_0[i] > threshold_time]  # Events from x_0 after threshold
 
-        # Superposition with HPP (add)
-        hpp = generate_hpp(
-            tmax=x_0.tmax,
-            n_sequences=len(x_0),
-        )
+            # Concatenate and sort to maintain temporal order
+            x_n_sequence = torch.cat([x_1_events, x_0_events])
+            x_n.append(torch.sort(x_n_sequence).values)
 
-        new_masks = self.thin_from_left_masks(hpp, alpha=1 - n_prob)
-        hpp_kept, hpp_thinned = hpp.thin(alpha=new_masks)
-        x_n = hpp_kept.add_events(x_0_kept)
-        x_n.kept = (x_n.kept.float() * x_n.mask.float()).bool()
+        return x_0, x_n
 
-        return x_n, x_0_thinned, x_0_kept, hpp, hpp_kept
 
     def forward(
-        self, x_0
+        self, x_1
     ):
         """
         Forward pass to train the model, i.e., predict x_0 from x_n.
@@ -363,24 +328,26 @@ class AddThin(DiffusionModell):
             classification logits, log likelihood of x_0 without x_n, noised data
         """
         # Uniformly sample n
-
-
         #pick 1 timestep between 0 to 1. it can be any value between that.  make it like the n in the docstrings above.
-
         # n = torch.randint(low=0, high=self.simulation_steps, size=(len(x_0),), device=x_0.time.device)       makeing changes here change#1
         # n = n.float() / self.simulation_steps
         # print(self.simulation_steps)
-        n = torch.rand(size=(len(x_0.time),), device=x_0.time.device)
-        x_n, x_0_thin, x_0_kept, x_0_temp, hpp_kept = self.noise(x_0=x_0, n=n)
+        
+        n = torch.rand(size=(len(x_1.time),), device=x_1.time.device)
+        # x_0, x_n = self.noise(x_1=x_1, n=n)
+        x_0 = generate_hpp(tmax = x_1.tmax, n_sequences=len(x_1))
 
-        unpadded_lens = x_0.unpadded_length.float() / self.n_max
-        x_1 = self.process_time_embed(unpadded_lens)                    # seq -> 16 dim embedding
+        unpadded_lens = x_1.unpadded_length.float() / self.n_max
+        x_1 = self.process_time_embed(unpadded_lens)                    
 
         decoded_lens = self.process_time_embed.decode(x_1).squeeze()
         # (flow_time_emb, tp_emb,x_n_emb) = self.compute_emb(n=n * self.simulation_steps, x_n=x_n)  change#2
-        (flow_time_emb, tp_emb, x_n_emb) = self.compute_emb(n=n, x_n=x_n)
+        # (flow_time_emb, tp_emb, x_n_emb) = self.compute_emb(n=n, x_n=x_n)
 
-        x_0 = torch.rand_like(x_1)
+        unpadded_lens_x_0 = x_0.unpadded_length.float() / self.n_max
+        x_0 = self.process_time_embed(unpadded_lens_x_0)  
+
+        # x_0 = torch.rand_like(x_1)
 
         t, xt, ut = self.FM.sample_location_and_conditional_flow(x0=x_0, t = n, x1=x_1)
         t = t.to(self.device)
@@ -392,18 +359,18 @@ class AddThin(DiffusionModell):
             vt = self.mlp(xt, t)
         decode_loss = F.mse_loss(decoded_lens, unpadded_lens)
         fm_loss = torch.mean((vt - ut) ** 2)
-        
+        loss = fm_loss + decode_loss  
 
-        log_like_x_0 = self.intensity_model.log_likelihood(
-            x_n_emb=x_n_emb,
-            flow_time_emb=flow_time_emb,
-            x_0=x_0_thin,
-            x_n=x_n,
-        )
 
-        loss = fm_loss + decode_loss + log_like_x_0
 
-        return log_like_x_0, x_n, loss
+        # log_like_x_0 = self.intensity_model.log_likelihood(
+        #     x_n_emb=x_n_emb,
+        #     flow_time_emb=flow_time_emb,
+        #     x_0=x_0,
+        #     x_n=x_n,
+        # )
+
+        return  xt , loss
 
     def sample(self, n_samples: int, tmax, seqs=None) -> Batch:
         """
@@ -456,23 +423,26 @@ class AddThin(DiffusionModell):
         if seqs is not None:
             seq_len = seqs
 
+        print(seq_len)
+
+
         total_steps = self.simulation_steps        #change#5
         # total_steps = 10
 
 
+        return seq_len
+        # for n_int in range(0, total_steps):
 
-        for n_int in range(0, total_steps):
+        #     n = torch.full(
+        #         (n_samples,), n_int, device=tmax.device, dtype=torch.float
+        #     )
 
-            n = torch.full(
-                (n_samples,), n_int, device=tmax.device, dtype=torch.float
-            )
+        #     n = n/total_steps
 
-            n = n/total_steps
-
-            x_0 = self.sample_x_plus_1(x_n=x_0, n = n, total_steps = total_steps, seq_len = seq_len)
+        #     x_0 = self.sample_x_plus_1(x_n=x_0, n = n, total_steps = total_steps, seq_len = seq_len)
 
 
-        return x_0
+        # return x_0
 
     def sample_x_plus_1(self, x_n: Batch, n, total_steps, seq_len) -> Batch:
         """

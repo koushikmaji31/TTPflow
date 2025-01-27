@@ -1,12 +1,12 @@
 name: add_thin
-
+# steps: 1
 steps: 1
 classifier_layer: 1
 encoder_layer: 3
-mix_components: 1
+# mix_components: 1
+mix_components : 8
 hidden_dims: 16
-simulation_steps: 3
-
-
+simulation_steps: 1
 kernel_size: 5
+
 

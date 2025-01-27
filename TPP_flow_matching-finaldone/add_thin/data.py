@@ -432,8 +432,6 @@ class Batch:
         """
         assert t_min.dim() == 1, "time has too many dimensions"
         assert t_max.dim() == 1, "time has too many dimensions"
-        print(">>>>>>>>>>>>>>>>>>>>>")
-        print("the no of seq in the batch is" ,t_min.shape[0])
 
         history_mask = self.time < t_min[:, None]
         forecast_mask = (self.time < t_max[:, None]) & ~history_mask
@@ -444,10 +442,6 @@ class Batch:
 
         # more than 5 events in history and more than one to be predicted
         batch_mask = (forecast_mask.sum(-1) > 1) & (history_mask.sum(-1) > 5)
-        print("the batchmask shape is also " ,batch_mask.shape[0])
-
-        print("the no of valid seq: ",sum(batch_mask).cpu().item())
-        print("<<<<<<<<<<<<<<<<<<<<<<<<")
 
 
         # stop training the batch which have size 0;

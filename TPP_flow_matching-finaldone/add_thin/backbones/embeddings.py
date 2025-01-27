@@ -65,7 +65,7 @@ class NyquistFrequencyEmbedding(nn.Module):
         return torch.addcmul(self.bias, self.scale, t[..., None]).sin()
 
 
-class N_embed(nn.Module):
+class   N_embed(nn.Module):
     def __init__(self, d_model):
         super(N_embed, self).__init__()
         self.d_model = d_model

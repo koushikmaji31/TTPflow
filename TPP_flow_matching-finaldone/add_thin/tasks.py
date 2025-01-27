@@ -77,7 +77,7 @@ class Tasks(pl.LightningModule):
             batch_size=batch.batch_size,
         )
 
-        return log_prob_x_0 + lossy
+        return  lossy
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(
